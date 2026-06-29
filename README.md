@@ -474,7 +474,7 @@ ent_sales_a2\Scripts\python.exe manage.py migrate
 ### 5. Crear un usuario administrador
 
 Necesario para iniciar sesión la primera vez (todas las páginas requieren
-sesión activa). Solo un usuario staff puede eliminar registros.
+sesión activa). Solo un usuario staff puede eliminar registros
 
 ```cmd
 ent_sales_a2\Scripts\python.exe manage.py createsuperuser
