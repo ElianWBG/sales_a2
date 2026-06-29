@@ -233,3 +233,309 @@
 
 # Product.objects.annotate(ns=Count('suppliers')).values('name', 'ns')
 # Salida (filtrado a los productos de esta demo): [{'name': 'ORM Demo Galaxy S24', 'ns': 1}]
+
+# Marca con menor valor de inventario
+# Brand.objects.annotate(maximo = Max('products__unit_price')).order_by('maximo').first()
+
+# Marca con mayor valor de inventario
+# Brand.objects.annotate(maximo = Max('products__unit_price')).order_by('-maximo').first()
+
+# Marcas que tengan descripción no nula
+# Brand.objects.exclude(description__isnull = True)
+
+# Productos con precio entre 20 y 50
+# Product.objects.filter(unit_price__range=(20,100))
+
+# Conteo de productos por grupo (ProductGroup)
+# ProductGroup.objects.annotate(cantidad = Count('products')).values("name","cantidad")
+
+# Precio promedio de productos agrupado por grupo, solo donde el promedio sea > 30
+# Product.objects.annotate(ola = Avg('unit_price')).filter(ola__gt = 30).values("name", "ola")
+
+# Promedio de los precios de productos agrupados por marca que sean mayores a 2
+# Product.objects.filter(brand_name_gt=2).annotate(promedio = Avg('unit_price')).values("name", "promedio")
+# ============================================
+# SENTENCIAS ORM - DJANGO
+# ============================================
+
+# # --- IMPORTS NECESARIOS ---
+# from django.db.models import Avg, Sum, Count, Max, Min, F
+
+# # ============================================
+# # 1. filter — filtrar registros
+# # ============================================
+# Product.objects.filter(is_active=True)
+# Customer.objects.filter(first_name='Jose')
+
+# # ============================================
+# # 2. exclude — todo excepto la condición
+# # ============================================
+# Product.objects.exclude(stock=0)
+# Invoice.objects.exclude(is_active=False)
+
+# # ============================================
+# # 3. get — obtener un solo registro
+# # ============================================
+# Customer.objects.get(dni='0927268516')
+# # Lanza DoesNotExist si no encuentra nada
+
+# # Forma segura:
+# try:
+#     cli = Customer.objects.get(dni='0927268516')
+# except Customer.DoesNotExist:
+#     print("No existe")
+
+# # ============================================
+# # 4. create — crear un registro
+# # ============================================
+# Customer.objects.create(
+#     dni='0944202118',
+#     first_name='Elian',
+#     last_name='Galeas'
+# )
+
+# # Con FK obligatoria:
+# marca = Brand.objects.first()
+# grupo = ProductGroup.objects.first()
+# Product.objects.create(
+#     name='Leche vaquita',
+#     unit_price=0.99,
+#     stock=10,
+#     brand=marca,
+#     group=grupo
+# )
+
+# # ============================================
+# # 5. update — actualizar registros
+# # ============================================
+# #  Siempre usar filter antes de update
+# Customer.objects.filter(first_name='Jose').update(first_name='Joseph')
+# Product.objects.filter(brand__name='Mango').update(unit_price=2.99)
+
+# # Con F() — referenciar valor actual del campo
+# Product.objects.filter(stock__gt=5).update(unit_price=F('unit_price') * 1.10)
+
+# # ============================================
+# # 6. delete — eliminar registros
+# # ============================================
+# Product.objects.filter(is_active=False).delete()
+
+# # ============================================
+# # 7. select_related — FK y OneToOne (1 JOIN)
+# # ============================================
+# # Sin select_related — N+1 queries 
+# productos = Product.objects.all()
+# for p in productos:
+#     print(p.brand.name)  # query extra por cada producto
+
+# # Con select_related — 1 sola query 
+# productos = Product.objects.select_related('brand', 'group').all()
+# for p in productos:
+#     print(p.name, p.brand.name, p.group.name)
+
+# # Facturas con cliente
+# Invoice.objects.select_related('customer').all()
+
+# # ============================================
+# # 8. prefetch_related — ManyToMany (2 queries)
+# # ============================================
+# productos = Product.objects.prefetch_related('suppliers').all()
+# for p in productos:
+#     for s in p.suppliers.all():
+#         print(p.name, '→', s.name)
+
+# # ============================================
+# # 9. ManyToMany — agregar/quitar
+# # ============================================
+# producto = Product.objects.first()
+# proveedor = Supplier.objects.get(name='Elian Galeas')
+
+# producto.suppliers.add(proveedor)           # agregar uno
+# producto.suppliers.add(p1, p2)             # agregar varios
+# producto.suppliers.remove(proveedor)        # quitar uno
+# producto.suppliers.all()                    # consultar todos
+# producto.suppliers.clear()                  # quitar todos
+
+# # ============================================
+# # 10. values — devuelve diccionarios
+# # ============================================
+# Product.objects.values('name', 'unit_price')
+# # {'name': 'Leche', 'unit_price': 0.99}
+
+# # ============================================
+# # 11. annotate — calcula por grupo
+# # ============================================
+# # Cantidad de productos por marca
+# Product.objects.values('brand__name').annotate(total=Count('id'))
+
+# # Stock total por grupo
+# Product.objects.values('group__name').annotate(total=Sum('stock'))
+
+# # Precio máximo por grupo
+# Product.objects.values('group__name').annotate(maximo=Max('unit_price'))
+
+# # Promedio de precio por marca mayor a 2
+# Product.objects.values('brand__name').annotate(promedio=Avg('unit_price')).filter(promedio__gt=2)
+
+# # Total facturado por cliente
+# Customer.objects.values('first_name').annotate(total=Sum('invoices__total'))
+
+# # Cliente con más facturas
+# Customer.objects.values('first_name').annotate(total=Count('invoices')).order_by('-total').first()
+
+# # ============================================
+# # 12. aggregate — calcula un solo resultado
+# # ============================================
+# Product.objects.aggregate(promedio=Avg('unit_price'))
+# # {'promedio': 1.75}
+
+# Product.objects.aggregate(total_stock=Sum('stock'))
+# # {'total_stock': 150}
+
+# # ============================================
+# # 13. order_by — ordenar resultados
+# # ============================================
+# Product.objects.order_by('unit_price')   # ascendente
+# Product.objects.order_by('-unit_price')  # descendente
+
+# # ============================================
+# # 14. first() y last()
+# # ============================================
+# Brand.objects.first()   # primero según ordering del modelo
+# Brand.objects.last()    # último
+# Sentencia: Product.objects.aggregate(min=Min('unit_price'))
+# Salida: {'min': 15.50}
+
+# Sentencia: Product.objects.values('brand_name').annotate(loque=Count('id')).filter(loque_gt=3)
+# Salida: <QuerySet [{'brand__name': 'Razer', 'loque': 5}, ...]>
+
+# Sentencia: Product.objects.values('group_name').annotate(stockq=Sum('stock')).filter(stockq_lte=50)
+# Salida: <QuerySet [{'group__name': 'Laptops', 'stockq': 12}, ...]>
+
+# Sentencia: 
+# mi_cliente = Customer.objects.get(dni='0912345678')
+# CustomerProfile.objects.create(customer=mi_cliente, taxpayer_type='cedula', credit_limit=0)
+# Salida: <CustomerProfile: Perfil: Apellido, Nombre>
+
+# Sentencia: 
+# nueva_gpu = Product.objects.create(name='RTX 4090', unit_price=1500)
+# distribuidor = Supplier.objects.get(name='GlobalSupply')
+# nueva_gpu.suppliers.add(distribuidor)
+# Salida: None
+
+# Sentencia: Product.objects.filter(suppliers__name='GlobalSupply')
+# Salida: <QuerySet [<Product: RTX 4090>, <Product: Teclado>]>
+
+# Sentencia: Supplier.objects.filter(email__icontains='spam').delete()
+# Salida: (3, {'app.Supplier': 3})
+
+# Sentencia: CustomerProfile.objects.update(credit_limit=F('credit_limit') + 500)
+# Salida: 25
+
+# Sentencia: InvoiceDetail.objects.filter(Q(quantity_gte=5) | Q(unit_price_lt=10))
+# Salida: <QuerySet [<InvoiceDetail: Mouse x 6>, ...]>
+
+# Sentencia: Brand.objects.annotate(prom=Avg('products_unit_price'), max=Max('productsunit_price')).filter(prom_gt=300).values('name', 'prom', 'max')
+# Salida: <QuerySet [{'name': 'Razer', 'prom': 350.00, 'max': 500.00}]>
+
+# Sentencia: Customer.objects.annotate(total_gastado=Sum('invoices_total'), compra_maxima=Max('invoicestotal')).filter(total_gastado_gt=500).values('first_name', 'total_gastado', 'compra_maxima')
+# Salida: <QuerySet [{'first_name': 'Jhoan', 'total_gastado': 850.50, 'compra_maxima': 600.00}]>
+
+# Sentencia: ProductGroup.objects.annotate(canti=Count('products_id'), suma=Sum('productsstock')).filter(suma_lt=150).values('name', 'canti', 'suma')
+# Salida: <QuerySet [{'name': 'Periféricos', 'canti': 8, 'suma': 120}]>
+
+# Sentencia: Supplier.objects.annotate(cantidad=Count('products_id'), propre=Avg('productsunit_price')).filter(propre_gt=80).values('name', 'cantidad', 'propre')
+# Salida: <QuerySet [{'name': 'TechDist', 'cantidad': 15, 'propre': 120.50}]>
+
+# Sentencia: Customer.objects.annotate(total_gastado=Sum('invoices__total')).order_by('-total_gastado').first()
+# Salida: <Customer: Villavicencio, Jhoan>
+# ============================================
+# SENTENCIAS ORM - NUEVAS
+# ============================================
+
+# from django.db.models import Avg, Sum, Count, Max, Min, F
+
+# # ============================================
+# # 1. __range — rango de valores
+# # ============================================
+# Product.objects.filter(unit_price__range=(1.00, 5.00))
+# Product.objects.filter(stock__range=(1, 10))
+
+# # ============================================
+# # 2. __istartswith — empieza con (sin importar mayúsculas)
+# # ============================================
+# Customer.objects.filter(last_name__istartswith='G')
+
+# # ============================================
+# # 3. __icontains — contiene (sin importar mayúsculas)
+# # ============================================
+# Product.objects.filter(name__icontains='leche')
+
+# # ============================================
+# # 4. __iendswith — termina con (sin importar mayúsculas)
+# # ============================================
+# Supplier.objects.filter(email__iendswith='@gmail.com')
+
+# # ============================================
+# # 5. __isnull — campo nulo o no
+# # ============================================
+# Customer.objects.filter(email__isnull=True)   # sin email
+# Customer.objects.filter(email__isnull=False)  # con email
+
+# # ============================================
+# # 6. __gte y __lt — mayor/menor igual
+# # ============================================
+# Product.objects.filter(stock__gte=5)          # stock >= 5
+# Product.objects.filter(stock__lt=5)           # stock < 5
+# Product.objects.filter(stock__lte=5)          # stock <= 5
+# Product.objects.filter(stock__gt=5)           # stock > 5
+
+# # ============================================
+# # 7. __in — dentro de una lista
+# # ============================================
+# Customer.objects.filter(id__in=[1, 2, 3])
+
+# # ============================================
+# # 8. exclude + __icontains
+# # ============================================
+# Product.objects.exclude(name__icontains='agua')
+
+# # ============================================
+# # 9. filter con FK usando __
+# # ============================================
+# Invoice.objects.filter(customer__dni='0944202118')
+# Invoice.objects.filter(customer__dni='0944202118').select_related('customer')
+
+# # ============================================
+# # 10. filter múltiple + order_by
+# # ============================================
+# Product.objects.filter(stock__lt=5, is_active=True).order_by('stock')
+# Product.objects.filter(is_active=True).order_by('-unit_price')[:3]
+
+# # ============================================
+# # 11. order_by múltiples campos
+# # ============================================
+# Product.objects.order_by('-unit_price', 'name')
+
+# # ============================================
+# # 12. NUEVO — __exact — coincidencia exacta
+# # ============================================
+# Customer.objects.filter(first_name__exact='elian')
+# # sensible a mayúsculas — 'elian' != 'Elian'
+
+# Customer.objects.filter(first_name__iexact='elian')
+# # insensible a mayúsculas — 'elian' == 'Elian' ✅
+
+# # ============================================
+# # 13. NUEVO — Q objects — condiciones OR
+# # ============================================
+# from django.db.models import Q
+
+# # Productos activos O con stock mayor a 10
+# Product.objects.filter(Q(is_active=True) | Q(stock__gt=10))
+
+# # Productos activos Y con precio menor a 5
+# Product.objects.filter(Q(is_active=True) & Q(unit_price__lt=5))
+
+# # Productos que NO estén activos
+# Product.objects.filter(~Q(is_active=True))
